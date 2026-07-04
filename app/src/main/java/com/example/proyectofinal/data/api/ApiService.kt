@@ -13,6 +13,7 @@ import retrofit2.http.Header
 import retrofit2.http.Query
 import retrofit2.http.Path
 import com.example.proyectofinal.data.model.MatchResponse
+import com.example.proyectofinal.data.model.MatchUpdatesResponse
 import com.example.proyectofinal.data.model.CreateGroupRequest
 import com.example.proyectofinal.data.model.CreatePredictionResponse
 import com.example.proyectofinal.data.model.GroupResponse
@@ -53,7 +54,7 @@ interface ApiService {
     suspend fun joinGroup(
         @Header("Authorization") token: String,
         @Body request: JoinGroupRequest
-    ): Response<Any>
+    ): Response<Unit>
     @POST("api/logout")
     suspend fun logout(
         @Header("Authorization") token: String
@@ -72,6 +73,12 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Int
     ): Response<MatchResponse>
+
+    @GET("api/matches/updates")
+    suspend fun getMatchUpdates(
+        @Header("Authorization") token: String,
+        @Query("since") since: String? = null
+    ): Response<MatchUpdatesResponse>
     @GET("api/stadiums")
     suspend fun getStadiums(
         @Header("Authorization") token: String

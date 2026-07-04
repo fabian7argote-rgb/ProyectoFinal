@@ -17,6 +17,10 @@ fun MatchDetailScreen(
     val viewModel: PredictionViewModel = viewModel()
     val state by viewModel.state.collectAsState()
 
+    LaunchedEffect(matchId) {
+        viewModel.loadMatchInfo(matchId)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -25,9 +29,28 @@ fun MatchDetailScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
+        state.matchInfo?.let { match ->
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Text(text = "${match.homeTeam} vs ${match.awayTeam}", style = MaterialTheme.typography.headlineSmall)
+                    Text(text = match.date, style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "Estadio: ${match.stadium}", style = MaterialTheme.typography.bodySmall)
+                    
+                    if (match.status == "finished") {
+                        Text(
+                            text = "Resultado final: ${match.homeScore} - ${match.awayScore}",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         Text(
             text = "Registrar Pronóstico",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.titleLarge
         )
 
         OutlinedTextField(

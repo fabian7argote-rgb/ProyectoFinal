@@ -5,9 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyectofinal.data.datastore.UserPreferences
 import com.example.proyectofinal.data.repository.AuthRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
+import com.example.proyectofinal.data.local.AppDatabase
+import com.example.proyectofinal.data.repository.DataRepository
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class ProfileState(
@@ -22,11 +22,34 @@ data class ProfileState(
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = AuthRepository()
+    private val db = AppDatabase.getDatabase(application)
+    private val dataRepository = DataRepository(
+        db.matchDao(),
+        db.groupDao(),
+        db.stadiumDao(),
+        db.profileDao()
+    )
+    private val authRepository = AuthRepository()
     private val preferences = UserPreferences(application)
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state
+
+    init {
+        viewModelScope.launch {
+            dataRepository.userProfile.collect { entity ->
+                entity?.let {
+                    _state.value = _state.value.copy(
+                        name = it.name,
+                        email = it.email,
+                        totalScore = it.totalScore,
+                        groups = it.groupsCount,
+                        predictions = it.predictionsCount
+                    )
+                }
+            }
+        }
+    }
 
     fun loadProfile() {
         viewModelScope.launch {
@@ -43,26 +66,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
 
-                val response = repository.getProfile(token)
-
-                if (response.isSuccessful && response.body() != null) {
-                    val body = response.body()!!
-
-                    _state.value = _state.value.copy(
-                        name = body.name,
-                        email = body.email,
-                        totalScore = body.total_score ?: 0,
-                        groups = body.groups_count ?: 0,
-                        predictions = body.predictions_count ?: 0,
-                        isLoading = false,
-                        errorMessage = ""
-                    )
-                } else {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = "No se pudo cargar el perfil"
-                    )
-                }
+                dataRepository.syncProfile(token)
+                _state.value = _state.value.copy(isLoading = false)
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -79,13 +84,15 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 val token = preferences.token.first()
 
                 if (!token.isNullOrEmpty()) {
-                    repository.logout(token)
+                    authRepository.logout(token)
                 }
 
+                dataRepository.clearLocalData()
                 preferences.clearSession()
                 onLogout()
 
             } catch (e: Exception) {
+                dataRepository.clearLocalData()
                 preferences.clearSession()
                 onLogout()
             }

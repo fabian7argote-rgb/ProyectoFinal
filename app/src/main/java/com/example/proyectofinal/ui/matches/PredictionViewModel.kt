@@ -5,6 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyectofinal.data.datastore.UserPreferences
 import com.example.proyectofinal.data.repository.AuthRepository
+import com.example.proyectofinal.data.local.AppDatabase
+import com.example.proyectofinal.data.local.entities.MatchEntity
+import com.example.proyectofinal.data.repository.DataRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -13,6 +16,7 @@ import kotlinx.coroutines.launch
 data class PredictionState(
     val homeGoals: String = "",
     val awayGoals: String = "",
+    val matchInfo: MatchEntity? = null,
     val isLoading: Boolean = false,
     val message: String = "",
     val errorMessage: String = ""
@@ -20,7 +24,14 @@ data class PredictionState(
 
 class PredictionViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = AuthRepository()
+    private val db = AppDatabase.getDatabase(application)
+    private val dataRepository = DataRepository(
+        db.matchDao(),
+        db.groupDao(),
+        db.stadiumDao(),
+        db.profileDao()
+    )
+    private val authRepository = AuthRepository()
     private val preferences = UserPreferences(application)
 
     private val _state = MutableStateFlow(PredictionState())
@@ -32,6 +43,17 @@ class PredictionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun onAwayGoalsChange(value: String) {
         _state.value = _state.value.copy(awayGoals = value)
+    }
+
+    fun loadMatchInfo(matchId: Int) {
+        viewModelScope.launch {
+            val match = db.matchDao().getMatchById(matchId)
+            _state.value = _state.value.copy(
+                matchInfo = match,
+                homeGoals = match?.predictedHomeScore?.toString() ?: "",
+                awayGoals = match?.predictedAwayScore?.toString() ?: ""
+            )
+        }
     }
 
     fun savePrediction(matchId: Int) {
@@ -63,7 +85,7 @@ class PredictionViewModel(application: Application) : AndroidViewModel(applicati
                     return@launch
                 }
 
-                val response = repository.createPrediction(
+                val response = authRepository.createPrediction(
                     token = token,
                     matchId = matchId,
                     home = home,
@@ -71,16 +93,24 @@ class PredictionViewModel(application: Application) : AndroidViewModel(applicati
                 )
 
                 if (response.isSuccessful) {
+                    // Actualizar localmente
+                    _state.value.matchInfo?.let {
+                        db.matchDao().insertMatches(listOf(
+                            it.copy(
+                                predictedHomeScore = home,
+                                predictedAwayScore = away
+                            )
+                        ))
+                    }
+
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        message = "Pronóstico guardado correctamente",
-                        homeGoals = "",
-                        awayGoals = ""
+                        message = "Pronóstico guardado correctamente"
                     )
                 } else {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        errorMessage = "No se pudo guardar el pronóstico"
+                        errorMessage = "No se pudo guardar el pronóstico en el servidor"
                     )
                 }
 

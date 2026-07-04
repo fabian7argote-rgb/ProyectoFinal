@@ -1,5 +1,7 @@
 package com.example.proyectofinal.ui.stadiums
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +10,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 @Composable
 fun StadiumsScreen(
@@ -16,8 +21,22 @@ fun StadiumsScreen(
     val viewModel: StadiumsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
 
+    var hasLocationPermission by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasLocationPermission = permissions.values.all { it }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadStadiums()
+        permissionLauncher.launch(
+            arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
 
     LazyColumn(
@@ -45,19 +64,31 @@ fun StadiumsScreen(
 
         item {
             Card(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                val cameraPositionState = rememberCameraPositionState {
+                    position = CameraPosition.fromLatLngZoom(LatLng(37.0902, -95.7129), 3f)
+                }
+
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(isMyLocationEnabled = hasLocationPermission),
+                    uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission)
                 ) {
-                    Text(
-                        text = "Mapa interactivo",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text("Aquí se mostrará Google Maps con los marcadores de los estadios.")
+                    state.stadiums.forEach { stadium ->
+                        Marker(
+                            state = MarkerState(position = LatLng(stadium.latitude, stadium.longitude)),
+                            title = stadium.name,
+                            snippet = "${stadium.city}, ${stadium.country}",
+                            onClick = {
+                                onStadiumClick(stadium.id)
+                                false
+                            }
+                        )
+                    }
                 }
             }
         }

@@ -12,9 +12,21 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Stadium
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToGroups: () -> Unit = {},
+    onNavigateToMatches: () -> Unit = {},
+    onNavigateToStadiums: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {}
+) {
+    val viewModel: HomeViewModel = viewModel()
+    val state by viewModel.state.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -47,8 +59,8 @@ fun HomeScreen() {
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Usuario Demo")
-                        Text("admin@gmail.com")
+                        Text(state.name)
+                        Text(state.email)
 
                     }
 
@@ -58,7 +70,7 @@ fun HomeScreen() {
 
             item {
                 Button(
-                    onClick = { },
+                    onClick = { onNavigateToGroups() },
                     modifier = Modifier.fillMaxWidth()
 
                 ) {
@@ -73,7 +85,7 @@ fun HomeScreen() {
 
             item {
                 Button(
-                    onClick = { },
+                    onClick = { onNavigateToMatches() },
                     modifier = Modifier.fillMaxWidth()
 
                 ) {
@@ -88,7 +100,7 @@ fun HomeScreen() {
 
             item {
                 Button(
-                    onClick = { },
+                    onClick = { onNavigateToStadiums() },
                     modifier = Modifier.fillMaxWidth()
                 ) {
 
@@ -102,7 +114,7 @@ fun HomeScreen() {
 
             item {
                 Button(
-                    onClick = { },
+                    onClick = { onNavigateToProfile() },
                     modifier = Modifier.fillMaxWidth()
 
                 ) {

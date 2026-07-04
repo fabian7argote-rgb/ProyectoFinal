@@ -5,9 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyectofinal.data.datastore.UserPreferences
 import com.example.proyectofinal.data.repository.AuthRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
+import com.example.proyectofinal.data.local.AppDatabase
+import com.example.proyectofinal.data.repository.DataRepository
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class StadiumUi(
@@ -30,11 +30,39 @@ data class StadiumState(
 
 class StadiumsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = AuthRepository()
+    private val db = AppDatabase.getDatabase(application)
+    private val dataRepository = DataRepository(
+        db.matchDao(),
+        db.groupDao(),
+        db.stadiumDao(),
+        db.profileDao()
+    )
     private val preferences = UserPreferences(application)
 
     private val _state = MutableStateFlow(StadiumState())
     val state: StateFlow<StadiumState> = _state
+
+    init {
+        viewModelScope.launch {
+            dataRepository.allStadiums.collect { entities ->
+                val list = entities.map {
+                    StadiumUi(
+                        id = it.id,
+                        name = it.name,
+                        city = it.city,
+                        country = it.country,
+                        latitude = it.latitude,
+                        longitude = it.longitude,
+                        capacity = it.capacity
+                    )
+                }
+                _state.value = _state.value.copy(
+                    stadiums = list,
+                    filteredStadiums = if (_state.value.search.isEmpty()) list else _state.value.filteredStadiums
+                )
+            }
+        }
+    }
 
     fun loadStadiums() {
         viewModelScope.launch {
@@ -51,32 +79,8 @@ class StadiumsViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
-                val response = repository.getStadiums(token)
-
-                if (response.isSuccessful && response.body() != null) {
-                    val list = response.body()!!.map {
-                        StadiumUi(
-                            id = it.id,
-                            name = it.name,
-                            city = it.city,
-                            country = it.country,
-                            latitude = it.latitude,
-                            longitude = it.longitude,
-                            capacity = it.capacity
-                        )
-                    }
-
-                    _state.value = _state.value.copy(
-                        stadiums = list,
-                        filteredStadiums = list,
-                        isLoading = false
-                    )
-                } else {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = "No se pudieron cargar los estadios"
-                    )
-                }
+                dataRepository.syncStadiums(token)
+                _state.value = _state.value.copy(isLoading = false)
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(

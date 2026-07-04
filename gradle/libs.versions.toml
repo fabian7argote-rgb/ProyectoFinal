@@ -18,9 +18,9 @@ navigationCompose = "2.8.4"
 playServicesLocation = "21.3.0"
 playServicesMaps = "19.0.0"
 retrofit = "2.11.0"
-roomCompiler = "2.6.1"
-roomKtx = "2.6.1"
-roomRuntime = "2.6.1"
+roomCompiler = "2.8.4"
+roomKtx = "2.8.4"
+roomRuntime = "2.8.4"
 ksp = "2.2.10-2.0.2"
 
 [libraries]

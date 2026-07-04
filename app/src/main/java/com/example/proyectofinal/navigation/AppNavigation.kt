@@ -7,11 +7,22 @@ import androidx.navigation.compose.rememberNavController
 import com.example.proyectofinal.ui.home.HomeScreen
 import com.example.proyectofinal.ui.login.LoginScreen
 import com.example.proyectofinal.ui.matches.MyPredictionsScreen
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.Stadium
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.*
+import com.example.proyectofinal.data.datastore.UserPreferences
 import com.example.proyectofinal.ui.groups.GroupsScreen
 import com.example.proyectofinal.ui.groups.GroupDetailScreen
 import com.example.proyectofinal.ui.matches.MatchesScreen
@@ -24,11 +35,24 @@ import com.example.proyectofinal.ui.stadiums.StadiumDetailScreen
 @Composable
 fun AppNavigation() {
 
+    val context = LocalContext.current
     val navController = rememberNavController()
+    val preferences = remember { UserPreferences(context) }
+    val token by preferences.token.collectAsState(initial = "loading")
+
+    if (token == "loading") {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN
+        startDestination = if (!token.isNullOrEmpty()) Routes.HOME else Routes.LOGIN
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(
@@ -70,43 +94,67 @@ fun AppNavigation() {
 fun MainScreen() {
 
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Routes.HOME) },
+                    selected = currentRoute == Routes.HOME,
+                    onClick = {
+                        if (currentRoute != Routes.HOME) {
+                            navController.navigate(Routes.HOME) {
+                                popUpTo(Routes.HOME) { inclusive = true }
+                            }
+                        }
+                    },
                     label = { Text("Inicio") },
-                    icon = { Text("🏠") }
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Home, null) }
                 )
 
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Routes.GROUPS) },
+                    selected = currentRoute == Routes.GROUPS || currentRoute?.startsWith("group_detail") == true,
+                    onClick = {
+                        if (currentRoute != Routes.GROUPS) {
+                            navController.navigate(Routes.GROUPS)
+                        }
+                    },
                     label = { Text("Grupos") },
-                    icon = { Text("👥") }
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Groups, null) }
                 )
 
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Routes.MATCHES) },
+                    selected = currentRoute == Routes.MATCHES || currentRoute?.startsWith("match_detail") == true,
+                    onClick = {
+                        if (currentRoute != Routes.MATCHES) {
+                            navController.navigate(Routes.MATCHES)
+                        }
+                    },
                     label = { Text("Partidos") },
-                    icon = { Text("⚽") }
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.SportsSoccer, null) }
                 )
 
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Routes.STADIUMS) },
+                    selected = currentRoute == Routes.STADIUMS || currentRoute?.startsWith("stadium_detail") == true,
+                    onClick = {
+                        if (currentRoute != Routes.STADIUMS) {
+                            navController.navigate(Routes.STADIUMS)
+                        }
+                    },
                     label = { Text("Mapa") },
-                    icon = { Text("🗺️") }
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Stadium, null) }
                 )
 
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Routes.PROFILE) },
+                    selected = currentRoute == Routes.PROFILE,
+                    onClick = {
+                        if (currentRoute != Routes.PROFILE) {
+                            navController.navigate(Routes.PROFILE)
+                        }
+                    },
                     label = { Text("Perfil") },
-                    icon = { Text("👤") }
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Person, null) }
                 )
             }
         }
@@ -118,7 +166,12 @@ fun MainScreen() {
             modifier = Modifier.padding(padding)
         ) {
             composable(Routes.HOME) {
-                HomeScreen()
+                HomeScreen(
+                    onNavigateToGroups = { navController.navigate(Routes.GROUPS) },
+                    onNavigateToMatches = { navController.navigate(Routes.MATCHES) },
+                    onNavigateToStadiums = { navController.navigate(Routes.STADIUMS) },
+                    onNavigateToProfile = { navController.navigate(Routes.PROFILE) }
+                )
             }
 
             composable(Routes.GROUPS) {
