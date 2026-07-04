@@ -22,6 +22,7 @@ data class ProfileState(
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
+
     private val db = AppDatabase.getDatabase(application)
     private val dataRepository = DataRepository(
         db.matchDao(),
@@ -54,7 +55,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     fun loadProfile() {
         viewModelScope.launch {
             try {
-                _state.value = _state.value.copy(isLoading = true)
+                _state.value = _state.value.copy(
+                    isLoading = true,
+                    errorMessage = ""
+                )
 
                 val token = preferences.token.first()
 
@@ -67,12 +71,15 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 }
 
                 dataRepository.syncProfile(token)
-                _state.value = _state.value.copy(isLoading = false)
+
+                _state.value = _state.value.copy(
+                    isLoading = false
+                )
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    errorMessage = "Error de conexión"
+                    errorMessage = e.localizedMessage ?: "Error de conexión"
                 )
             }
         }

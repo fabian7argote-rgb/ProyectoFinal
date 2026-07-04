@@ -1,58 +1,31 @@
 package com.example.proyectofinal.navigation
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.compose.*
+import com.example.proyectofinal.ui.groups.GroupDetailScreen
+import com.example.proyectofinal.ui.groups.GroupsScreen
 import com.example.proyectofinal.ui.home.HomeScreen
 import com.example.proyectofinal.ui.login.LoginScreen
-import com.example.proyectofinal.ui.matches.MyPredictionsScreen
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material.icons.filled.Stadium
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.compose.*
-import com.example.proyectofinal.data.datastore.UserPreferences
-import com.example.proyectofinal.ui.groups.GroupsScreen
-import com.example.proyectofinal.ui.groups.GroupDetailScreen
-import com.example.proyectofinal.ui.matches.MatchesScreen
-import com.example.proyectofinal.ui.profile.ProfileScreen
-import com.example.proyectofinal.ui.stadiums.StadiumsScreen
-import com.example.proyectofinal.ui.matches.MatchDetailScreen
 import com.example.proyectofinal.ui.login.RegisterScreen
+import com.example.proyectofinal.ui.matches.MatchDetailScreen
+import com.example.proyectofinal.ui.matches.MatchesScreen
+import com.example.proyectofinal.ui.matches.MyPredictionsScreen
+import com.example.proyectofinal.ui.profile.ProfileScreen
 import com.example.proyectofinal.ui.stadiums.StadiumDetailScreen
+import com.example.proyectofinal.ui.stadiums.StadiumsScreen
 
 @Composable
 fun AppNavigation() {
 
-    val context = LocalContext.current
     val navController = rememberNavController()
-    val preferences = remember { UserPreferences(context) }
-    val token by preferences.token.collectAsState(initial = "loading")
-
-    if (token == "loading") {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
 
     NavHost(
         navController = navController,
-        startDestination = if (!token.isNullOrEmpty()) Routes.HOME else Routes.LOGIN
+        startDestination = Routes.LOGIN
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(
@@ -69,10 +42,6 @@ fun AppNavigation() {
             )
         }
 
-        composable(Routes.HOME) {
-            MainScreen()
-        }
-
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegisterSuccess = {
@@ -87,6 +56,10 @@ fun AppNavigation() {
                 }
             )
         }
+
+        composable(Routes.HOME) {
+            MainScreen()
+        }
     }
 }
 
@@ -94,67 +67,57 @@ fun AppNavigation() {
 fun MainScreen() {
 
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
+            NavigationBar(
+                containerColor = Color(0xFF061A14),
+                contentColor = Color.White
+            ) {
+                BottomItem(
+                    label = "Inicio",
+                    icon = "🏠",
                     selected = currentRoute == Routes.HOME,
                     onClick = {
-                        if (currentRoute != Routes.HOME) {
-                            navController.navigate(Routes.HOME) {
-                                popUpTo(Routes.HOME) { inclusive = true }
-                            }
-                        }
-                    },
-                    label = { Text("Inicio") },
-                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Home, null) }
+                        navController.navigate(Routes.HOME)
+                    }
                 )
 
-                NavigationBarItem(
-                    selected = currentRoute == Routes.GROUPS || currentRoute?.startsWith("group_detail") == true,
+                BottomItem(
+                    label = "Grupos",
+                    icon = "👥",
+                    selected = currentRoute == Routes.GROUPS,
                     onClick = {
-                        if (currentRoute != Routes.GROUPS) {
-                            navController.navigate(Routes.GROUPS)
-                        }
-                    },
-                    label = { Text("Grupos") },
-                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Groups, null) }
+                        navController.navigate(Routes.GROUPS)
+                    }
                 )
 
-                NavigationBarItem(
-                    selected = currentRoute == Routes.MATCHES || currentRoute?.startsWith("match_detail") == true,
+                BottomItem(
+                    label = "Partidos",
+                    icon = "⚽",
+                    selected = currentRoute == Routes.MATCHES,
                     onClick = {
-                        if (currentRoute != Routes.MATCHES) {
-                            navController.navigate(Routes.MATCHES)
-                        }
-                    },
-                    label = { Text("Partidos") },
-                    icon = { Icon(androidx.compose.material.icons.Icons.Default.SportsSoccer, null) }
+                        navController.navigate(Routes.MATCHES)
+                    }
                 )
 
-                NavigationBarItem(
-                    selected = currentRoute == Routes.STADIUMS || currentRoute?.startsWith("stadium_detail") == true,
+                BottomItem(
+                    label = "Sedes",
+                    icon = "🏟",
+                    selected = currentRoute == Routes.STADIUMS,
                     onClick = {
-                        if (currentRoute != Routes.STADIUMS) {
-                            navController.navigate(Routes.STADIUMS)
-                        }
-                    },
-                    label = { Text("Mapa") },
-                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Stadium, null) }
+                        navController.navigate(Routes.STADIUMS)
+                    }
                 )
 
-                NavigationBarItem(
+                BottomItem(
+                    label = "Perfil",
+                    icon = "👤",
                     selected = currentRoute == Routes.PROFILE,
                     onClick = {
-                        if (currentRoute != Routes.PROFILE) {
-                            navController.navigate(Routes.PROFILE)
-                        }
-                    },
-                    label = { Text("Perfil") },
-                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Person, null) }
+                        navController.navigate(Routes.PROFILE)
+                    }
                 )
             }
         }
@@ -165,13 +128,9 @@ fun MainScreen() {
             startDestination = Routes.HOME,
             modifier = Modifier.padding(padding)
         ) {
+
             composable(Routes.HOME) {
-                HomeScreen(
-                    onNavigateToGroups = { navController.navigate(Routes.GROUPS) },
-                    onNavigateToMatches = { navController.navigate(Routes.MATCHES) },
-                    onNavigateToStadiums = { navController.navigate(Routes.STADIUMS) },
-                    onNavigateToProfile = { navController.navigate(Routes.PROFILE) }
-                )
+                HomeScreen()
             }
 
             composable(Routes.GROUPS) {
@@ -182,23 +141,28 @@ fun MainScreen() {
                 )
             }
 
+            composable(Routes.GROUP_DETAIL) { backStackEntry ->
+                val groupId = backStackEntry.arguments
+                    ?.getString("groupId")
+                    ?.toIntOrNull() ?: 0
+
+                GroupDetailScreen(groupId = groupId)
+            }
+
             composable(Routes.MATCHES) {
                 MatchesScreen(
-                    onMatchClick = { id ->
-                        navController.navigate(
-                            Routes.matchDetail(id)
-                        )
+                    onMatchClick = { matchId ->
+                        navController.navigate(Routes.matchDetail(matchId))
                     }
                 )
             }
+
             composable(Routes.MATCH_DETAIL) { backStackEntry ->
+                val matchId = backStackEntry.arguments
+                    ?.getString("matchId")
+                    ?.toIntOrNull() ?: 0
 
-                val matchId =
-                    backStackEntry.arguments
-                        ?.getString("matchId")
-                        ?.toIntOrNull() ?: 0
-
-                MatchDetailScreen(matchId)
+                MatchDetailScreen(matchId = matchId)
             }
 
             composable(Routes.STADIUMS) {
@@ -207,6 +171,14 @@ fun MainScreen() {
                         navController.navigate(Routes.stadiumDetail(stadiumId))
                     }
                 )
+            }
+
+            composable(Routes.STADIUM_DETAIL) { backStackEntry ->
+                val stadiumId = backStackEntry.arguments
+                    ?.getString("stadiumId")
+                    ?.toIntOrNull() ?: 0
+
+                StadiumDetailScreen(stadiumId = stadiumId)
             }
 
             composable(Routes.PROFILE) {
@@ -221,25 +193,27 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Routes.GROUP_DETAIL) { backStackEntry ->
 
-                val groupId = backStackEntry.arguments
-                    ?.getString("groupId")
-                    ?.toIntOrNull() ?: 0
-
-                GroupDetailScreen(groupId = groupId)
-            }
             composable(Routes.MY_PREDICTIONS) {
                 MyPredictionsScreen()
             }
-            composable(Routes.STADIUM_DETAIL) { backStackEntry ->
-
-                val stadiumId = backStackEntry.arguments
-                    ?.getString("stadiumId")
-                    ?.toIntOrNull() ?: 0
-
-                StadiumDetailScreen(stadiumId = stadiumId)
-            }
         }
+    }
+}
+
+@Composable
+fun BottomItem(
+    label: String,
+    icon: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    TextButton(
+        onClick = onClick,
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = if (selected) Color(0xFFFFD166) else Color(0xFFCFEFE2)
+        )
+    ) {
+        Text("$icon\n$label")
     }
 }
