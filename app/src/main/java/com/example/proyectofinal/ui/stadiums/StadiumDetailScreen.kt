@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -26,19 +27,29 @@ fun StadiumDetailScreen(
     val viewModel: StadiumDetailViewModel = viewModel()
     val state by viewModel.state.collectAsState()
 
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            LatLng(23.6345, -102.5528),
+            4f
+        )
+    }
+
     LaunchedEffect(stadiumId) {
         viewModel.loadStadiumDetail(stadiumId)
     }
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            LatLng(
-                state.latitude,
-                state.longitude
-            ),
-            14f
-        )
+
+    LaunchedEffect(state.latitude, state.longitude) {
+        if (state.latitude != 0.0 && state.longitude != 0.0) {
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngZoom(
+                    LatLng(state.latitude, state.longitude),
+                    14f
+                )
+            )
+        }
     }
-    LazyColumn(
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(
@@ -51,108 +62,76 @@ fun StadiumDetailScreen(
                 )
             )
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        item {
-            Text(
-                text = if (state.name.isNotEmpty()) state.name else "Detalle del Estadio",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium
+        Text(
+            text = if (state.name.isNotEmpty()) state.name else "Detalle del Estadio",
+            color = Color.White,
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        if (state.isLoading) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFFFFD166)
             )
         }
 
-        if (state.isLoading) {
-            item {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFFFD166)
-                )
-            }
-        }
-
         if (state.errorMessage.isNotEmpty()) {
-            item {
+            Text(
+                text = state.errorMessage,
+                color = Color(0xFFFF6B6B)
+            )
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF0E2A21)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
-                    text = state.errorMessage,
-                    color = Color(0xFFFF6B6B)
+                    text = "🏟 Información de la sede",
+                    color = Color(0xFFFFD166),
+                    style = MaterialTheme.typography.titleLarge
                 )
+
+                Text("Ciudad: ${state.city}", color = Color.White)
+                Text("País: ${state.country}", color = Color.White)
+                Text("Capacidad: ${state.capacity}", color = Color.White)
             }
         }
 
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF0E2A21)
-                )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF102C44)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "🏟 Información de la sede",
-                        color = Color(0xFFFFD166),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    Text(
-                        text = "Ciudad: ${state.city}",
-                        color = Color.White
-                    )
-
-                    Text(
-                        text = "País: ${state.country}",
-                        color = Color.White
-                    )
-
-                    Text(
-                        text = "Capacidad: ${state.capacity}",
-                        color = Color.White
-                    )
-
-                    Divider(color = Color(0xFF6FAF98))
-
-                    Text(
-                        text = "Latitud: ${state.latitude}",
-                        color = Color(0xFFCFEFE2)
-                    )
-
-                    Text(
-                        text = "Longitud: ${state.longitude}",
-                        color = Color(0xFFCFEFE2)
-                    )
-                }
-            }
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF102C44)
+                Text(
+                    text = "🗺 Ubicación",
+                    color = Color(0xFFFFD166),
+                    style = MaterialTheme.typography.titleLarge
                 )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+
+                GoogleMap(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
+                    cameraPositionState = cameraPositionState
                 ) {
-
-                    Text(
-                        text = "🗺 Ubicación del estadio",
-                        color = Color(0xFFFFD166),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    GoogleMap(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(280.dp),
-                        cameraPositionState = cameraPositionState
-                    ) {
+                    if (state.latitude != 0.0 && state.longitude != 0.0) {
                         Marker(
                             state = MarkerState(
                                 position = LatLng(
@@ -164,38 +143,33 @@ fun StadiumDetailScreen(
                             snippet = "${state.city}, ${state.country}"
                         )
                     }
-
-                    Text(
-                        text = "Ciudad: ${state.city}",
-                        color = Color.White
-                    )
-
-                    Text(
-                        text = "País: ${state.country}",
-                        color = Color.White
-                    )
                 }
             }
         }
 
-        item {
-            Text(
-                text = "⚽ Partidos en este estadio",
-                color = Color.White,
-                style = MaterialTheme.typography.titleLarge
-            )
-        }
+        Text(
+            text = "⚽ Partidos en este estadio",
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge
+        )
 
-        if (state.matches.isEmpty() && !state.isLoading) {
-            item {
-                Text(
-                    text = "No hay partidos registrados para este estadio.",
-                    color = Color(0xFFCFEFE2)
-                )
-            }
-        } else {
-            items(state.matches) { match ->
-                StadiumMatchCard(match)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            if (state.matches.isEmpty() && !state.isLoading) {
+                item {
+                    Text(
+                        text = "No hay partidos registrados para este estadio.",
+                        color = Color(0xFFCFEFE2)
+                    )
+                }
+            } else {
+                items(state.matches) { match ->
+                    StadiumMatchCard(match)
+                }
             }
         }
     }
@@ -207,13 +181,13 @@ fun StadiumMatchCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF102C44)
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(

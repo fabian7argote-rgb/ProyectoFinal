@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.navigation.compose)
-
+    implementation(libs.androidx.compose.material.icons.extended)
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 

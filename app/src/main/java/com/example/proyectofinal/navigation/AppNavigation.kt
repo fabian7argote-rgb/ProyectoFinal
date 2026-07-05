@@ -1,11 +1,21 @@
 package com.example.proyectofinal.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.proyectofinal.ui.groups.GroupDetailScreen
 import com.example.proyectofinal.ui.groups.GroupsScreen
 import com.example.proyectofinal.ui.home.HomeScreen
@@ -17,6 +27,8 @@ import com.example.proyectofinal.ui.matches.MyPredictionsScreen
 import com.example.proyectofinal.ui.profile.ProfileScreen
 import com.example.proyectofinal.ui.stadiums.StadiumDetailScreen
 import com.example.proyectofinal.ui.stadiums.StadiumsScreen
+import androidx.compose.material.icons.Icons
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun AppNavigation() {
@@ -71,54 +83,39 @@ fun MainScreen() {
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFF061A14),
-                contentColor = Color.White
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(76.dp)
+                    .background(Color(0xFF061A14))
             ) {
-                BottomItem(
-                    label = "Inicio",
-                    icon = "🏠",
-                    selected = currentRoute == Routes.HOME,
-                    onClick = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BottomItem("Inicio", Icons.Default.Home, currentRoute == Routes.HOME) {
                         navController.navigate(Routes.HOME)
                     }
-                )
 
-                BottomItem(
-                    label = "Grupos",
-                    icon = "👥",
-                    selected = currentRoute == Routes.GROUPS,
-                    onClick = {
+                    BottomItem("Grupos", Icons.Default.Groups, currentRoute == Routes.GROUPS) {
                         navController.navigate(Routes.GROUPS)
                     }
-                )
 
-                BottomItem(
-                    label = "Partidos",
-                    icon = "⚽",
-                    selected = currentRoute == Routes.MATCHES,
-                    onClick = {
+                    BottomItem("Partidos", Icons.Default.SportsSoccer, currentRoute == Routes.MATCHES) {
                         navController.navigate(Routes.MATCHES)
                     }
-                )
 
-                BottomItem(
-                    label = "Sedes",
-                    icon = "🏟",
-                    selected = currentRoute == Routes.STADIUMS,
-                    onClick = {
+                    BottomItem("Sedes", Icons.Default.LocationOn, currentRoute == Routes.STADIUMS) {
                         navController.navigate(Routes.STADIUMS)
                     }
-                )
 
-                BottomItem(
-                    label = "Perfil",
-                    icon = "👤",
-                    selected = currentRoute == Routes.PROFILE,
-                    onClick = {
+                    BottomItem("Perfil", Icons.Default.Person, currentRoute == Routes.PROFILE) {
                         navController.navigate(Routes.PROFILE)
                     }
-                )
+                }
             }
         }
     ) { padding ->
@@ -204,16 +201,30 @@ fun MainScreen() {
 @Composable
 fun BottomItem(
     label: String,
-    icon: String,
+    icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    TextButton(
-        onClick = onClick,
-        colors = ButtonDefaults.textButtonColors(
-            contentColor = if (selected) Color(0xFFFFD166) else Color(0xFFCFEFE2)
-        )
+    val color = if (selected) Color(0xFFFFD166) else Color(0xFFCFEFE2)
+
+    Column(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("$icon\n$label")
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = color,
+            modifier = Modifier.size(22.dp)
+        )
+
+        Text(
+            text = label,
+            color = color,
+            style = MaterialTheme.typography.labelSmall
+        )
     }
 }
+
