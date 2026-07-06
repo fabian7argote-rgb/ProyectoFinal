@@ -13,9 +13,7 @@ import retrofit2.http.Header
 import retrofit2.http.Query
 import retrofit2.http.Path
 import com.example.proyectofinal.data.model.MatchResponse
-import com.example.proyectofinal.data.model.MatchUpdatesResponse
 import com.example.proyectofinal.data.model.CreateGroupRequest
-import com.example.proyectofinal.data.model.CreatePredictionResponse
 import com.example.proyectofinal.data.model.GroupResponse
 import com.example.proyectofinal.data.model.JoinGroupRequest
 import com.example.proyectofinal.data.model.StadiumResponse
@@ -75,11 +73,6 @@ interface ApiService {
         @Path("id") id: Int
     ): Response<MatchResponse>
 
-    @GET("api/matches/updates")
-    suspend fun getMatchUpdates(
-        @Header("Authorization") token: String,
-        @Query("since") since: String? = null
-    ): Response<MatchUpdatesResponse>
     @GET("api/stadiums")
     suspend fun getStadiums(
         @Header("Authorization") token: String

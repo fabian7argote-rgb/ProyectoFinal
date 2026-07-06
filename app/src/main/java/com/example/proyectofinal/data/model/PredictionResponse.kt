@@ -1,17 +1,6 @@
 package com.example.proyectofinal.data.model
 
-data class CreatePredictionResponse(
-    val message: String,
-    val prediction: PredictionSavedResponse
-)
 
-data class PredictionSavedResponse(
-    val id: Int,
-    val match_id: Int,
-    val home_score: Int,
-    val away_score: Int,
-    val status: String
-)
 
 data class MyPredictionResponse(
     val id: Int,

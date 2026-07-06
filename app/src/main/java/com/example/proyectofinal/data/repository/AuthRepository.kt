@@ -34,8 +34,7 @@ class AuthRepository {
             )
         )
 
-    suspend fun getGroups(token: String) =
-        ApiClient.api.getGroups("Bearer $token")
+
 
     suspend fun createGroup(token: String, name: String) =
         ApiClient.api.createGroup(
@@ -75,8 +74,6 @@ class AuthRepository {
             id = id
         )
 
-    suspend fun getStadiums(token: String) =
-        ApiClient.api.getStadiums("Bearer $token")
 
     suspend fun getStadiumById(token: String, id: Int) =
         ApiClient.api.getStadiumById(

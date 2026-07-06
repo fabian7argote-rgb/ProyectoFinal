@@ -29,9 +29,6 @@ import com.example.proyectofinal.ui.stadiums.StadiumDetailScreen
 import com.example.proyectofinal.ui.stadiums.StadiumsScreen
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.unit.dp
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 
 @Composable
 fun AppNavigation() {
@@ -279,40 +276,4 @@ fun BottomItem(
     }
 }
 
-private fun formatHomeMatchDate(rawDate: String): String {
-    if (rawDate.isBlank()) {
-        return "Fecha no disponible"
-    }
 
-    return try {
-        val normalizedDate = rawDate.replace(
-            Regex("""\.(\d{3})\d*Z$"""),
-            ".$1Z"
-        )
-
-        val inputFormat = SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            Locale.US
-        ).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-
-        val outputFormat = SimpleDateFormat(
-            "dd/MM/yyyy - HH:mm",
-            Locale("es", "ES")
-        ).apply {
-            timeZone = TimeZone.getDefault()
-        }
-
-        val date = inputFormat.parse(normalizedDate)
-
-        if (date != null) {
-            outputFormat.format(date)
-        } else {
-            rawDate
-        }
-
-    } catch (e: Exception) {
-        rawDate
-    }
-}
