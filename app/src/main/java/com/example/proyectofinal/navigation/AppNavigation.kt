@@ -29,6 +29,9 @@ import com.example.proyectofinal.ui.stadiums.StadiumDetailScreen
 import com.example.proyectofinal.ui.stadiums.StadiumsScreen
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun AppNavigation() {
@@ -127,7 +130,25 @@ fun MainScreen() {
         ) {
 
             composable(Routes.HOME) {
-                HomeScreen()
+                HomeScreen(
+                    onNavigateToGroups = {
+                        navController.navigate(Routes.GROUPS)
+                    },
+                    onNavigateToMatches = {
+                        navController.navigate(Routes.MATCHES)
+                    },
+                    onNavigateToStadiums = {
+                        navController.navigate(Routes.STADIUMS)
+                    },
+                    onNavigateToProfile = {
+                        navController.navigate(Routes.PROFILE)
+                    },
+                    onNextMatchClick = { matchId ->
+                        navController.navigate(
+                            Routes.matchDetail(matchId)
+                        )
+                    }
+                )
             }
 
             composable(Routes.GROUPS) {
@@ -180,11 +201,9 @@ fun MainScreen() {
                             inclusive = false
                         )
 
-                        /*
-                         * Si el usuario abrió el partido desde otra
-                         * pantalla y Grupos no está en el historial,
-                         * navegamos a Grupos.
-                         */
+                        //Si el usuario abrió el partido desde otra
+                         //pantalla y Grupos no está en el historial,
+                         //navegamos a Grupos.
                         if (!returnedToGroups) {
                             navController.navigate(Routes.GROUPS) {
                                 launchSingleTop = true
@@ -260,3 +279,40 @@ fun BottomItem(
     }
 }
 
+private fun formatHomeMatchDate(rawDate: String): String {
+    if (rawDate.isBlank()) {
+        return "Fecha no disponible"
+    }
+
+    return try {
+        val normalizedDate = rawDate.replace(
+            Regex("""\.(\d{3})\d*Z$"""),
+            ".$1Z"
+        )
+
+        val inputFormat = SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            Locale.US
+        ).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+
+        val outputFormat = SimpleDateFormat(
+            "dd/MM/yyyy - HH:mm",
+            Locale("es", "ES")
+        ).apply {
+            timeZone = TimeZone.getDefault()
+        }
+
+        val date = inputFormat.parse(normalizedDate)
+
+        if (date != null) {
+            outputFormat.format(date)
+        } else {
+            rawDate
+        }
+
+    } catch (e: Exception) {
+        rawDate
+    }
+}

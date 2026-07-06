@@ -34,10 +34,10 @@ class PredictionViewModel(
     val state: StateFlow<PredictionState> = _state
 
     fun onHomeGoalsChange(value: String) {
-        /*
-         * Solo permitimos números.
-         * Esto evita que el usuario escriba letras.
-         */
+
+         //Solo permitimos números.
+         //Esto evita que el usuario escriba letras.
+
         if (value.all { it.isDigit() }) {
             _state.value = _state.value.copy(
                 homeGoals = value,

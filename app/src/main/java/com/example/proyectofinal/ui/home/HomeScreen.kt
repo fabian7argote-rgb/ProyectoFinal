@@ -5,14 +5,32 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToGroups: () -> Unit,
+    onNavigateToMatches: () -> Unit,
+    onNavigateToStadiums: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNextMatchClick: (Int) -> Unit
+) {
+
+    val viewModel: HomeViewModel = viewModel()
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadHomeData()
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -64,7 +82,7 @@ fun HomeScreen() {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "120 pts",
+                        text = "${state.totalScore} pts",
                         color = Color(0xFFFFD166),
                         style = MaterialTheme.typography.headlineLarge
                     )
@@ -86,13 +104,13 @@ fun HomeScreen() {
             ) {
                 HomeMiniCard(
                     title = "Grupos",
-                    value = "3",
+                    value = state.groupsCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
 
                 HomeMiniCard(
                     title = "Pronósticos",
-                    value = "15",
+                    value = state.predictionsCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -117,30 +135,59 @@ fun HomeScreen() {
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        text = "Argentina vs Brasil",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    if (state.nextMatchId != null) {
 
-                    Text(
-                        text = "15 Jun 2026 - 18:00",
-                        color = Color(0xFFD6F5E8)
-                    )
+                        Text(
+                            text = "${state.nextMatchHomeTeam} vs ${state.nextMatchAwayTeam}",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+
+                        Text(
+                            text = formatHomeMatchDate(state.nextMatchDate),
+                            color = Color(0xFFD6F5E8)
+                        )
+
+                    } else {
+
+                        Text(
+                            text = "No hay próximos partidos",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+
+                        Text(
+                            text = "Consulta nuevamente más tarde",
+                            color = Color(0xFFD6F5E8)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
-                        onClick = { },
+                        onClick = {
+                            state.nextMatchId?.let { matchId ->
+                                onNextMatchClick(matchId)
+                            }
+                        },
+                        enabled = state.nextMatchId != null,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFFFD166),
-                            contentColor = Color(0xFF061A14)
+                            contentColor = Color(0xFF061A14),
+                            disabledContainerColor = Color(0xFF6F745F),
+                            disabledContentColor = Color.LightGray
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Hacer pronóstico")
-                    }
-                }
+                        Text(
+                            text = if (state.nextMatchId != null) {
+                                "Hacer pronóstico"
+                            } else {
+                                "Sin partidos disponibles"
+                            }
+                        )
+
+                    }   }
             }
         }
 
@@ -153,15 +200,35 @@ fun HomeScreen() {
         }
 
         item {
-            QuickActionCard("👥 Mis grupos", "Crea o únete a una quiniela")
+            QuickActionCard(
+                title = "👥 Mis grupos",
+                subtitle = "Crea o únete a una quiniela",
+                onClick = onNavigateToGroups
+            )
         }
 
         item {
-            QuickActionCard("⚽ Partidos", "Consulta calendario y resultados")
+            QuickActionCard(
+                title = "⚽ Partidos",
+                subtitle = "Consulta calendario y resultados",
+                onClick = onNavigateToMatches
+            )
         }
 
         item {
-            QuickActionCard("🏟 Sedes", "Explora los estadios del Mundial")
+            QuickActionCard(
+                title = "🏟 Sedes",
+                subtitle = "Explora los estadios del Mundial",
+                onClick = onNavigateToStadiums
+            )
+        }
+
+        item {
+            QuickActionCard(
+                title = "👤 Mi perfil",
+                subtitle = "Consulta tu puntaje y tus estadísticas",
+                onClick = onNavigateToProfile
+            )
         }
     }
 }
@@ -201,30 +268,83 @@ fun HomeMiniCard(
 @Composable
 fun QuickActionCard(
     title: String,
-    subtitle: String
+    subtitle: String,
+    onClick: () -> Unit
 ) {
     Card(
+        onClick = onClick,
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF0E2A21)
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
+                )
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = subtitle,
+                    color = Color(0xFFCFEFE2)
+                )
+            }
 
             Text(
-                text = subtitle,
-                color = Color(0xFFCFEFE2)
+                text = "›",
+                color = Color(0xFFFFD166),
+                style = MaterialTheme.typography.headlineMedium
             )
         }
+    }
+}
+private fun formatHomeMatchDate(rawDate: String): String {
+    if (rawDate.isBlank()) {
+        return "Fecha no disponible"
+    }
+
+    return try {
+        val normalizedDate = rawDate.replace(
+            Regex("""\.(\d{3})\d*Z$"""),
+            ".$1Z"
+        )
+
+        val inputFormat = SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            Locale.US
+        ).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+
+        val outputFormat = SimpleDateFormat(
+            "dd/MM/yyyy - HH:mm",
+            Locale("es", "BO")
+        ).apply {
+            timeZone = TimeZone.getDefault()
+        }
+
+        val parsedDate = inputFormat.parse(normalizedDate)
+
+        if (parsedDate != null) {
+            outputFormat.format(parsedDate)
+        } else {
+            rawDate
+        }
+
+    } catch (e: Exception) {
+        rawDate
     }
 }
