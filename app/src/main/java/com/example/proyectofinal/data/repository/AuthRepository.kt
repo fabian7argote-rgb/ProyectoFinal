@@ -43,10 +43,15 @@ class AuthRepository {
             CreateGroupRequest(name)
         )
 
-    suspend fun joinGroup(token: String, inviteCode: String) =
+    suspend fun joinGroup(
+        token: String,
+        inviteCode: String
+    ) =
         ApiClient.api.joinGroup(
-            "Bearer $token",
-            JoinGroupRequest(inviteCode)
+            token = "Bearer $token",
+            request = JoinGroupRequest(
+                inviteCode = inviteCode
+            )
         )
 
     suspend fun getMatches(

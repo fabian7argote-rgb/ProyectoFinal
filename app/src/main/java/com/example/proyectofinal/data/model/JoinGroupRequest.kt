@@ -1,5 +1,8 @@
 package com.example.proyectofinal.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class JoinGroupRequest(
-    val invite_code: String
+    @SerializedName("invite_code")
+    val inviteCode: String
 )
