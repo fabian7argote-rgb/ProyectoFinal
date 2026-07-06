@@ -58,6 +58,7 @@ class GroupDetailViewModel(application: Application) : AndroidViewModel(applicat
                     errorMessage = ""
                 )
 
+
                 val token = preferences.token.first()
 
                 if (token.isNullOrEmpty()) {
@@ -68,8 +69,20 @@ class GroupDetailViewModel(application: Application) : AndroidViewModel(applicat
                     return@launch
                 }
 
-                val detailResponse = repository.getGroupDetail(token, groupId)
-                val leaderboardResponse = repository.getGroupLeaderboard(token, groupId)
+                val detailResponse = repository.getGroupDetail(
+                    token = token,
+                    id = groupId
+                )
+
+                val leaderboardResponse = repository.getGroupLeaderboard(
+                    token = token,
+                    id = groupId
+                )
+
+                val matchesResponse = repository.getMatches(
+                    token = token,
+                    next = true
+                )
 
                 if (detailResponse.isSuccessful && detailResponse.body() != null) {
 
@@ -82,19 +95,6 @@ class GroupDetailViewModel(application: Application) : AndroidViewModel(applicat
                                 id = it.id,
                                 name = it.name,
                                 score = it.score
-                            )
-                        }
-
-                    val matches = detail.next_matches
-                        .orEmpty()
-                        .map {
-                            GroupMatchUi(
-                                id = it.id,
-                                homeTeam = it.home_team,
-                                awayTeam = it.away_team,
-                                date = it.match_date,
-                                phase = it.phase,
-                                status = it.status
                             )
                         }
 
@@ -113,6 +113,24 @@ class GroupDetailViewModel(application: Application) : AndroidViewModel(applicat
                         emptyList()
                     }
 
+                    val matches = if (
+                        matchesResponse.isSuccessful &&
+                        matchesResponse.body() != null
+                    ) {
+                        matchesResponse.body()!!.map {
+                            GroupMatchUi(
+                                id = it.id,
+                                homeTeam = it.home_team,
+                                awayTeam = it.away_team,
+                                date = it.match_date,
+                                phase = it.phase,
+                                status = it.status
+                            )
+                        }
+                    } else {
+                        emptyList()
+                    }
+
                     _state.value = _state.value.copy(
                         groupName = detail.name,
                         inviteCode = detail.invite_code.orEmpty(),
@@ -122,6 +140,7 @@ class GroupDetailViewModel(application: Application) : AndroidViewModel(applicat
                         isLoading = false,
                         errorMessage = ""
                     )
+
 
                 } else {
                     _state.value = _state.value.copy(
