@@ -72,50 +72,55 @@ class GroupDetailViewModel(application: Application) : AndroidViewModel(applicat
                 val leaderboardResponse = repository.getGroupLeaderboard(token, groupId)
 
                 if (detailResponse.isSuccessful && detailResponse.body() != null) {
+
                     val detail = detailResponse.body()!!
 
-                    val participants = detail.participants.map {
-                        GroupParticipantUi(
-                            id = it.id,
-                            name = it.name,
-                            score = it.score
-                        )
-                    }
-
-                    val matches = detail.next_matches.map {
-                        GroupMatchUi(
-                            id = it.id,
-                            homeTeam = it.home_team,
-                            awayTeam = it.away_team,
-                            date = it.match_date,
-                            phase = it.phase,
-                            status = it.status
-                        )
-                    }
-
-                    val leaderboard = if (
-                        leaderboardResponse.isSuccessful &&
-                        leaderboardResponse.body() != null
-                    ) {
-                        leaderboardResponse.body()!!.map {
-                            LeaderboardUi(
-                                position = it.position,
+                    val participants = detail.participants
+                        .orEmpty()
+                        .map {
+                            GroupParticipantUi(
                                 id = it.id,
                                 name = it.name,
                                 score = it.score
                             )
                         }
+
+                    val matches = detail.next_matches
+                        .orEmpty()
+                        .map {
+                            GroupMatchUi(
+                                id = it.id,
+                                homeTeam = it.home_team,
+                                awayTeam = it.away_team,
+                                date = it.match_date,
+                                phase = it.phase,
+                                status = it.status
+                            )
+                        }
+
+                    val leaderboard = if (leaderboardResponse.isSuccessful) {
+                        leaderboardResponse.body()
+                            .orEmpty()
+                            .map {
+                                LeaderboardUi(
+                                    position = it.position,
+                                    id = it.id,
+                                    name = it.name,
+                                    score = it.score
+                                )
+                            }
                     } else {
                         emptyList()
                     }
 
                     _state.value = _state.value.copy(
                         groupName = detail.name,
-                        inviteCode = detail.invite_code,
+                        inviteCode = detail.invite_code.orEmpty(),
                         participants = participants,
                         leaderboard = leaderboard,
                         nextMatches = matches,
-                        isLoading = false
+                        isLoading = false,
+                        errorMessage = ""
                     )
 
                 } else {
