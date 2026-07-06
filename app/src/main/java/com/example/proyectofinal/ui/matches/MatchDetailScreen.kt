@@ -15,13 +15,31 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun MatchDetailScreen(
-    matchId: Int
-) {
+    matchId: Int,
+    onPredictionSaved: () -> Unit
+){
     val matchViewModel: MatchDetailViewModel = viewModel()
     val matchState by matchViewModel.state.collectAsState()
 
     val predictionViewModel: PredictionViewModel = viewModel()
     val predictionState by predictionViewModel.state.collectAsState()
+
+    LaunchedEffect(predictionState.predictionSaved) {
+        if (predictionState.predictionSaved) {
+
+            /*
+             * Primero consumimos el evento para evitar
+             * navegaciones repetidas.
+             */
+            predictionViewModel.consumePredictionSaved()
+
+            /*
+             * Después avisamos a AppNavigation que debe
+             * regresar a la pantalla de grupos.
+             */
+            onPredictionSaved()
+        }
+    }
 
     LaunchedEffect(matchId) {
         matchViewModel.loadMatch(matchId)
@@ -146,6 +164,7 @@ fun MatchDetailScreen(
                     onClick = {
                         predictionViewModel.savePrediction(matchId)
                     },
+                    enabled = !predictionState.isLoading,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(

@@ -1,68 +1,82 @@
 package com.example.proyectofinal.ui.matches
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyectofinal.data.datastore.UserPreferences
 import com.example.proyectofinal.data.repository.AuthRepository
-import com.example.proyectofinal.data.local.AppDatabase
-import com.example.proyectofinal.data.local.entities.MatchEntity
-import com.example.proyectofinal.data.repository.DataRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 data class PredictionState(
     val homeGoals: String = "",
     val awayGoals: String = "",
-    val matchInfo: MatchEntity? = null,
     val isLoading: Boolean = false,
     val message: String = "",
-    val errorMessage: String = ""
+    val errorMessage: String = "",
+
+    // Este valor funciona como evento de navegación.
+    val predictionSaved: Boolean = false
 )
 
-class PredictionViewModel(application: Application) : AndroidViewModel(application) {
+class PredictionViewModel(
+    application: Application
+) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getDatabase(application)
-    private val dataRepository = DataRepository(
-        db.matchDao(),
-        db.groupDao(),
-        db.stadiumDao(),
-        db.profileDao()
-    )
-    private val authRepository = AuthRepository()
+    private val repository = AuthRepository()
     private val preferences = UserPreferences(application)
 
     private val _state = MutableStateFlow(PredictionState())
     val state: StateFlow<PredictionState> = _state
 
     fun onHomeGoalsChange(value: String) {
-        _state.value = _state.value.copy(homeGoals = value)
+        /*
+         * Solo permitimos números.
+         * Esto evita que el usuario escriba letras.
+         */
+        if (value.all { it.isDigit() }) {
+            _state.value = _state.value.copy(
+                homeGoals = value,
+                errorMessage = ""
+            )
+        }
     }
 
     fun onAwayGoalsChange(value: String) {
-        _state.value = _state.value.copy(awayGoals = value)
-    }
-
-    fun loadMatchInfo(matchId: Int) {
-        viewModelScope.launch {
-            val match = db.matchDao().getMatchById(matchId)
+        if (value.all { it.isDigit() }) {
             _state.value = _state.value.copy(
-                matchInfo = match,
-                homeGoals = match?.predictedHomeScore?.toString() ?: "",
-                awayGoals = match?.predictedAwayScore?.toString() ?: ""
+                awayGoals = value,
+                errorMessage = ""
             )
         }
     }
 
     fun savePrediction(matchId: Int) {
+
         val home = _state.value.homeGoals.toIntOrNull()
         val away = _state.value.awayGoals.toIntOrNull()
 
+        if (matchId <= 0) {
+            _state.value = _state.value.copy(
+                errorMessage = "El identificador del partido no es válido"
+            )
+            return
+        }
+
         if (home == null || away == null) {
             _state.value = _state.value.copy(
-                errorMessage = "Ingresa goles válidos"
+                errorMessage = "Ingresa los goles de ambos equipos"
+            )
+            return
+        }
+
+        if (home < 0 || away < 0) {
+            _state.value = _state.value.copy(
+                errorMessage = "Los goles no pueden ser negativos"
             )
             return
         }
@@ -71,21 +85,22 @@ class PredictionViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 _state.value = _state.value.copy(
                     isLoading = true,
+                    message = "",
                     errorMessage = "",
-                    message = ""
+                    predictionSaved = false
                 )
 
                 val token = preferences.token.first()
 
-                if (token.isNullOrEmpty()) {
+                if (token.isNullOrBlank()) {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        errorMessage = "No hay sesión activa"
+                        errorMessage = "No hay una sesión activa"
                     )
                     return@launch
                 }
 
-                val response = authRepository.createPrediction(
+                val response = repository.createPrediction(
                     token = token,
                     matchId = matchId,
                     home = home,
@@ -93,33 +108,82 @@ class PredictionViewModel(application: Application) : AndroidViewModel(applicati
                 )
 
                 if (response.isSuccessful) {
-                    // Actualizar localmente
-                    _state.value.matchInfo?.let {
-                        db.matchDao().insertMatches(listOf(
-                            it.copy(
-                                predictedHomeScore = home,
-                                predictedAwayScore = away
-                            )
-                        ))
+
+                    Log.d(
+                        "CREATE_PREDICTION",
+                        "Pronóstico guardado. HTTP ${response.code()}"
+                    )
+
+                    _state.value = _state.value.copy(
+                        homeGoals = "",
+                        awayGoals = "",
+                        isLoading = false,
+                        message = "Pronóstico guardado correctamente",
+                        errorMessage = "",
+                        predictionSaved = true
+                    )
+
+                } else {
+
+                    val rawError = response.errorBody()
+                        ?.string()
+                        .orEmpty()
+
+                    Log.e(
+                        "CREATE_PREDICTION",
+                        "HTTP ${response.code()} - $rawError"
+                    )
+
+                    val backendMessage = try {
+                        JSONObject(rawError)
+                            .optString("message")
+                            .takeIf { it.isNotBlank() }
+                    } catch (e: Exception) {
+                        null
+                    }
+
+                    val message = backendMessage ?: when (response.code()) {
+                        401 -> "Tu sesión expiró. Inicia sesión nuevamente."
+                        403 -> "No tienes permiso para pronosticar este partido."
+                        404 -> "El partido no existe."
+                        409 -> "Ya registraste un pronóstico para este partido."
+                        422 -> "El pronóstico contiene datos no válidos."
+                        else -> "No se pudo guardar el pronóstico. Error ${response.code()}."
                     }
 
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        message = "Pronóstico guardado correctamente"
-                    )
-                } else {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = "No se pudo guardar el pronóstico en el servidor"
+                        errorMessage = message,
+                        predictionSaved = false
                     )
                 }
 
             } catch (e: Exception) {
+
+                Log.e(
+                    "CREATE_PREDICTION",
+                    "Error guardando el pronóstico",
+                    e
+                )
+
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    errorMessage = e.localizedMessage ?: "Error de conexión"
+                    errorMessage = e.localizedMessage
+                        ?: "Error de conexión con el servidor",
+                    predictionSaved = false
                 )
             }
         }
+    }
+
+    /**
+     * Se ejecuta después de navegar.
+     * Evita que Compose intente navegar varias veces
+     * durante una recomposición.
+     */
+    fun consumePredictionSaved() {
+        _state.value = _state.value.copy(
+            predictionSaved = false
+        )
     }
 }

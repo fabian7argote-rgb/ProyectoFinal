@@ -139,11 +139,19 @@ fun MainScreen() {
             }
 
             composable(Routes.GROUP_DETAIL) { backStackEntry ->
+
                 val groupId = backStackEntry.arguments
                     ?.getString("groupId")
                     ?.toIntOrNull() ?: 0
 
-                GroupDetailScreen(groupId = groupId)
+                GroupDetailScreen(
+                    groupId = groupId,
+                    onMatchClick = { matchId ->
+                        navController.navigate(
+                            Routes.matchDetail(matchId)
+                        )
+                    }
+                )
             }
 
             composable(Routes.MATCHES) {
@@ -155,11 +163,35 @@ fun MainScreen() {
             }
 
             composable(Routes.MATCH_DETAIL) { backStackEntry ->
+
                 val matchId = backStackEntry.arguments
                     ?.getString("matchId")
                     ?.toIntOrNull() ?: 0
 
-                MatchDetailScreen(matchId = matchId)
+                MatchDetailScreen(
+                    matchId = matchId,
+                    onPredictionSaved = {
+
+                         //Si Grupos ya existe en el historial,
+                         // regresamos a esa misma pantalla.
+
+                        val returnedToGroups = navController.popBackStack(
+                            route = Routes.GROUPS,
+                            inclusive = false
+                        )
+
+                        /*
+                         * Si el usuario abrió el partido desde otra
+                         * pantalla y Grupos no está en el historial,
+                         * navegamos a Grupos.
+                         */
+                        if (!returnedToGroups) {
+                            navController.navigate(Routes.GROUPS) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                )
             }
 
             composable(Routes.STADIUMS) {

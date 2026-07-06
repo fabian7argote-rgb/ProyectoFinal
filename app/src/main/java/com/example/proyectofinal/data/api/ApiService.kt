@@ -23,6 +23,7 @@ import com.example.proyectofinal.data.model.GroupDetailResponse
 import com.example.proyectofinal.data.model.LeaderboardResponse
 import com.example.proyectofinal.data.model.MyPredictionResponse
 import com.example.proyectofinal.data.model.PredictionRequest
+import okhttp3.ResponseBody
 
 
 interface ApiService {
@@ -110,7 +111,7 @@ interface ApiService {
     suspend fun createPrediction(
         @Header("Authorization") token: String,
         @Body request: PredictionRequest
-    ): Response<CreatePredictionResponse>
+    ): Response<ResponseBody>
 
     @GET("api/predictions/me")
     suspend fun getMyPredictions(
